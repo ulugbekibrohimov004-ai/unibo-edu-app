@@ -3,9 +3,50 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<link rel="icon" type="image/webp" href="assets/unibo-logo.webp">
+<link rel="preload" href="fonts/onest-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/unibo-logo.webp" as="image" type="image/webp">
+<link rel="preload" href="assets/edu-owl-hero.webp" as="image" type="image/webp">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <title>UNIBO Edu</title>
 <style>
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Onest';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(fonts/onest-cyrillic-ext.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Onest';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(fonts/onest-cyrillic.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Onest';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(fonts/onest-latin-ext.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Onest';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(fonts/onest-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 :root {
   --bg: var(--tg-theme-secondary-bg-color, #F4F7FC);
   --surface: var(--tg-theme-bg-color, #FFFFFF);
@@ -376,10 +417,14 @@ const inTg = !!(tg && tg.platform && tg.platform !== "unknown");
 const q = new URLSearchParams(location.search);
 let lang = ["uz", "ru", "en"].includes(q.get("l")) ? q.get("l") : ((tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code) || "uz").slice(0, 2);
 if (!UI[lang]) lang = "uz";
+// Diqqat: b / fd / ft URL parametrlari faqat ko'rsatish uchun (balans, bepul limit). Ularga ishonib bo'lmaydi:
+// foydalanuvchi URL'ni o'zgartira oladi. Buyurtmani qabul qilgan bot balans, bepul limit va 18+ holatini
+// O'ZI qayta tekshirishi shart (README.md, "Server shartnomasi").
+const clampInt = (v, max) => Math.min(max, Math.max(0, parseInt(v, 10) || 0));
 const user = {
-  balance: q.has("b") ? Math.max(0, parseInt(q.get("b"), 10) || 0) : (inTg ? null : 15000),
+  balance: q.has("b") ? clampInt(q.get("b"), 1e9) : (inTg ? null : 15000),   // Telegramdan tashqarida - demo ko'rinish
   giftOk: q.has("fd") ? q.get("fd") === "1" : true,
-  freeLeft: q.has("ft") ? Math.max(0, parseInt(q.get("ft"), 10) || 0) : CATALOG.freeTools,
+  freeLeft: q.has("ft") ? clampInt(q.get("ft"), CATALOG.freeTools) : CATALOG.freeTools,
 };
 const canSend = !inTg || !tg.initData;   // sendData faqat pastki klaviatura tugmasidan ochilganda ishlaydi
 const L = () => UI[lang];
@@ -616,9 +661,9 @@ function renderHome() {
   const l = L(), ai = searchMode === "ai", value = ai ? aiQuery : searchText;
   const langs = `<select class="lang-select" id="uiLang" aria-label="${esc(l.language)}">${["uz", "ru", "en"].map(c => `<option value="${c}"${c === lang ? " selected" : ""}>${c.toUpperCase()}</option>`).join("")}</select>`;
   const bal = user.balance === null ? "" : `<span class="chip-bal" aria-label="${esc(l.balance + ": " + money(user.balance))}">${icon("wallet")}<span>${esc(money(user.balance))}</span></span>`;
-  app.innerHTML = `<div class="screen"><header class="top"><span class="brand"><img class="brand-logo" src="assets/unibo-logo.png" alt="${esc(CATALOG.brand)}" width="1254" height="1254" decoding="async" fetchpriority="high"></span>${bal}${langs}</header>
+  app.innerHTML = `<div class="screen"><header class="top"><span class="brand"><img class="brand-logo" src="assets/unibo-logo.webp" alt="${esc(CATALOG.brand)}" width="264" height="264" decoding="async" fetchpriority="high"></span>${bal}${langs}</header>
     <section class="home-hero" id="homeHero"${ai || searchText.trim() ? " hidden" : ""}><div class="hero-inner"><div class="hero-copy"><div class="hero-kicker">${icon("spark")}${esc(l.kicker)}</div><h1>${esc(l.hello)}</h1><p>${esc(l.sub)}</p></div>
-      <img class="hero-art" src="assets/edu-owl-hero.png" alt="" width="1254" height="1254" decoding="async" fetchpriority="high"></div>
+      <img class="hero-art" src="assets/edu-owl-hero.webp" alt="" width="660" height="660" decoding="async" fetchpriority="high"></div>
       <div class="hero-actions"><button class="btn-primary" type="button" data-scroll="services">${esc(l.explore)}${icon("arrow")}</button>${(CATALOG.videos || []).length ? `<button class="btn-secondary" type="button" data-scroll="videoLessons">${icon("play")}${esc(l.watch)}</button>` : ""}</div></section>
     <div class="search-modes" role="group" aria-label="${esc(l.searchModes)}"><button type="button" data-search-mode="services" aria-pressed="${!ai}">${esc(l.serviceMode)}</button><button type="button" data-search-mode="ai" aria-pressed="${ai}">${esc(l.aiMode)}</button></div>
     <form class="search-form" id="searchForm" novalidate><div class="search">${icon("search")}<input id="q" type="search" autocomplete="off"${ai ? ' maxlength="500" aria-describedby="aiHint aiLength aiError"' : ''} placeholder="${esc(ai ? l.aiPlaceholder : l.search)}" value="${esc(value)}" aria-label="${esc(ai ? l.aiSearchLabel : l.searchLabel)}"><button class="search-clear" id="qClear" type="button" data-reset-search aria-label="${esc(l.clearSearch)}"${!value ? " hidden" : ""}>${icon("close")}</button></div>
